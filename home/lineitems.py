@@ -32,7 +32,8 @@ def new_targeting(request):
         json_data = {"valid": True, "account_id": account_id, "line_item_id": line_item_id, "targeting_value": targeting_value}
     except Exception as e:
         # Get first item from list of errors
-        json_data = e.details[0]
+        json_data["response"] = e.response.body
+        #print type(e.response.headers.all)
         json_data["valid"] = False
         # passing to push the json_data to the browser
         pass
