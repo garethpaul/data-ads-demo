@@ -8,6 +8,7 @@ from twitter_ads.audience import TailoredAudience
 from twitter_ads.http import Request
 from twitter_ads.cursor import Cursor
 from twitter_ads.error import Error
+import base64
 
 
 @login_required
@@ -69,8 +70,15 @@ def change(request):
     resource = '/0/accounts/' + account_id + '/tailored_audience_changes'
     params = {
         'tailored_audience_id': identifier,
-        'input_file_path': input_file_path,
+        'input_file_path': base64.b64decode(input_file_path),
         'operation': "ADD"}
-    request = Request(client, 'post', resource, params=params).perform()
-    json_data = {"account_id": account_id, "data": request.body['data']}
+    json_data = {}
+    try:
+        request = Request(client, 'post', resource, params=params).perform()
+        json_data["account_id"] = account_id
+        json_data["data"] = request.body["data"]
+
+
+    except Error as e:
+        json_data["error"] = e.details
     return HttpResponse(json.dumps(json_data), content_type="application/json")

@@ -23,28 +23,30 @@ setup();
 function listAccounts(){
   var accountList = JSON.parse(localStorage.getItem("adsAccounts"))
   $(accountList).each(function( index ) {
-    $(".dropdown-ads-accounts").append("<li><a href='#' class='ads-api-account' data-id='" + accountList[index].id + "'>" + accountList[index].name + "</a></li>");
+    $(".dropdown-ads-accounts").append("<li><a href='#' id='ads-api-account' data-id='" + accountList[index].id + "'>" + accountList[index].name + "</a></li>");
   });
+
+  console.log("listing accounts")
   // onclick Item
-  $(".ads-api-account").click(function(e) {
+  $("#ads-api-account").click(function(e) {
     e.preventDefault();
     var accountId = $(this).data("id");
     getCampaigns(accountId)
     // remove Ads Tools
-    $(".ads-accounts").hide();
-    $(".ads-api-account").remove();
+    //$(".ads-accounts").hide();
+    //$(".ads-api-account").remove();
     // Setup Campaigns
-    $(".ads-campaigns").show();
+    //$(".ads-campaigns").show();
     //getCampaigns();
 
     // if audiences
     if (page == "AUDIENCE"){
       // Upload to TA
       var name = escape(localStorage.getItem("selected_bucket_name"));
-      newTA(accountId, name)
+      //newTA(accountId, name)
 
     }
-      getCampaigns(accountId)
+      //getCampaigns(accountId)
       // remove Ads Tools
       $(".ads-accounts").hide();
       $(".ads-api-account").remove();
@@ -69,11 +71,18 @@ function newTA(account_id, name){
 }
 
 // Map the bucket to the placeholder
-function mapBucket(account_id, id, input_file_path){
+function mapBucket(account_id, identifier, input_file_path){
   console.log("mapBucket called");
-  $.getJSON("../../ads/api/audiences/change?account_id=" + account_id + "&id=" + id + "&input_file_path=" + input_file_path,
+  var encodedData = window.btoa(input_file_path)
+  $.getJSON("../../ads/api/audiences/change?account_id=" + account_id + "&id=" + identifier + "&input_file_path=" + encodedData,
   function (json) {
-    console.log(json);
+    //console.log(json);
+
+    if (json["error"]) {
+      console.log("http request failed for mapping the bucket to the input_file_path");
+      return false;
+    }
+
   });
 }
 
@@ -83,8 +92,11 @@ function getCampaigns(account_id){
   function (json) {
     $(json["campaigns"]).each(function( index ) {
       var campaign = json["campaigns"][index]
-      $(".dropdown-ads-campaigns").append("<li><a href='#' class='ads-api-campaign' data-id='" + campaign.id + "'>" + campaign.name + "</a></li>");
+      $(".dropdown-ads-campaigns").append("<li><a href='#' class='ads-api-campaign' data-id='" + campaign['id'] + "'>" + escape(campaign['name']) + "</a></li>");
     });
+
+
+
     // onclick Item
     $(".ads-api-campaign").click(function(e) {
       e.preventDefault();
@@ -96,6 +108,8 @@ function getCampaigns(account_id){
       // Setup Campaigns
       $(".ads-lineitems").show();
     });
+
+
   });
 }
 
@@ -138,7 +152,7 @@ function setTATargeting(account_id, campaign_id, line_item_id){
       console.log(json);
       //$('#adsModal').hide();
       //location.reload();
-      
+
     } else {
       // make things happen
       console.log("error");
