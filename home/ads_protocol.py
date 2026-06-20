@@ -2,19 +2,23 @@ from __future__ import unicode_literals
 
 import json
 import re
+import sys
 
 import requests
 from requests.adapters import HTTPAdapter
 from requests_oauthlib import OAuth1Session
 try:
-    from urllib.parse import parse_qs, urlsplit
+    from urllib.parse import parse_qs, unquote_to_bytes, urlsplit
 except ImportError:
     from urlparse import parse_qs, urlsplit
+    from urllib import unquote as unquote_to_bytes
 
 try:
     string_types = (basestring,)
 except NameError:
     string_types = (str,)
+
+PY2 = sys.version_info[0] == 2
 
 
 MAX_REQUEST_BYTES = 4 * 1024
@@ -193,14 +197,24 @@ def parse_targeting_form(method, content_type, body):
     if re.search(br"%(?![0-9A-Fa-f]{2})", body):
         raise AdsProtocolError("targeting request encoding is invalid")
     try:
-        decoded = body.decode("ascii")
-        parsed = parse_qs(
-            decoded,
-            keep_blank_values=True,
-            strict_parsing=True,
-            encoding="utf-8",
-            errors="strict",
-        )
+        if PY2:
+            parsed = {}
+            for pair in body.split(b"&"):
+                if pair.count(b"=") != 1:
+                    raise ValueError("invalid form pair")
+                raw_name, raw_value = pair.split(b"=", 1)
+                name = unquote_to_bytes(raw_name.replace(b"+", b" ")).decode("ascii")
+                value = unquote_to_bytes(raw_value.replace(b"+", b" ")).decode("utf-8")
+                parsed.setdefault(name, []).append(value)
+        else:
+            decoded = body.decode("ascii")
+            parsed = parse_qs(
+                decoded,
+                keep_blank_values=True,
+                strict_parsing=True,
+                encoding="utf-8",
+                errors="strict",
+            )
     except (UnicodeDecodeError, ValueError, TypeError):
         raise AdsProtocolError("targeting request encoding is invalid")
 
