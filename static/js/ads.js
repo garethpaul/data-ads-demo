@@ -1,4 +1,61 @@
 // Setup
+var targetingWriteInFlight = false;
+
+function getCookie(name) {
+  var cookies = document.cookie ? document.cookie.split(";") : [];
+  for (var index = 0; index < cookies.length; index++) {
+    var cookie = $.trim(cookies[index]);
+    if (cookie.substring(0, name.length + 1) === name + "=") {
+      return decodeURIComponent(cookie.substring(name.length + 1));
+    }
+  }
+  return "";
+}
+
+function submitTargeting(payloads) {
+  if (targetingWriteInFlight || payloads.length === 0) {
+    return;
+  }
+
+  targetingWriteInFlight = true;
+  $(".ads-add-targeting").prop("disabled", true);
+
+  function finish() {
+    targetingWriteInFlight = false;
+    $(".ads-add-targeting").prop("disabled", false);
+  }
+
+  function submitAt(index) {
+    if (index >= payloads.length) {
+      finish();
+      return;
+    }
+    $.ajax({
+      url: "../../ads/api/targeting/new",
+      type: "POST",
+      dataType: "json",
+      data: payloads[index],
+      headers: {"X-CSRFToken": getCookie("csrftoken")}
+    }).done(function(json) {
+      if (json.valid === true) {
+        submitAt(index + 1);
+      } else {
+        $(".error").show();
+        $(".error-details").text("Targeting request was rejected.");
+        finish();
+      }
+    }).fail(function() {
+      $(".error").show();
+      $(".error-details").text(
+        "Targeting outcome is unknown. Inspect the Ads account before retrying."
+      );
+      finish();
+    });
+  }
+
+  submitAt(0);
+}
+
 function setup(){
   getAccounts();
   // Only show the accounts list.
@@ -76,8 +133,6 @@ function mapBucket(account_id, identifier, input_file_path){
   var encodedData = window.btoa(input_file_path)
   $.getJSON("../../ads/api/audiences/change?account_id=" + account_id + "&id=" + identifier + "&input_file_path=" + encodedData,
   function (json) {
-    //console.log(json);
-
     if (json["error"]) {
       console.log("http request failed for mapping the bucket to the input_file_path");
       return false;
@@ -128,8 +183,6 @@ function getLineItems(account_id, campaign_id){
       $(".ads-lineitems").hide();
       $(".ads-api-lineitem").remove();
       $(".ads-targeting").show();
-      getTargetingCriteria(account_id, campaign_id, $(this).data("id"));
-
       if (page == "AUDIENCE") {
         setTATargeting(account_id, campaign_id, $(this).data("id"));
       } else {
@@ -143,29 +196,18 @@ function getLineItems(account_id, campaign_id){
 
 // set TargetingCriteria
 function setTATargeting(account_id, campaign_id, line_item_id){
-  // for each value send http request to create a targeting criteria
-  $.getJSON("../../ads/api/targeting/new?account_id=" + account_id + "&line_item_id=" + line_item_id + "&targeting_value=" +  localStorage.getItem("selected_ta_list_id") + "&targeting_type=TAILORED_AUDIENCE",
-  function (json) {
-    if (json['valid'] == true){
-      //everything is great
-      console.log("no error");
-      console.log(json);
-      //$('#adsModal').hide();
-      //location.reload();
-
-    } else {
-      // make things happen
-      console.log("error");
-      console.log(error);
-      $(".error").show();
-      $(".error-details").text(json);
-    }
-  });
+  submitTargeting([{
+    account_id: account_id,
+    line_item_id: line_item_id,
+    targeting_value: localStorage.getItem("selected_ta_list_id"),
+    targeting_type: "CUSTOM_AUDIENCE"
+  }]);
 }
 
 // Get the targeting criteria to a dropdown to target
 function getTargetingCriteria(account_id, campaign_id, line_item_id){
-  $(".ads-add-targeting").click(function(e) {
+  $(".ads-add-targeting").off("click.targeting").on("click.targeting", function(e) {
+    e.preventDefault();
     setTargetingCriteria(account_id, campaign_id, line_item_id);
   });
 
@@ -175,7 +217,6 @@ function getTargetingCriteria(account_id, campaign_id, line_item_id){
 
 
   $(checkedVals).each(function( index ) {
-    console.log(checkedVals);
     $(".ads-targeting-list").append("<li>" + checkedVals[index] + "</li>");
   });
 
@@ -183,25 +224,18 @@ function getTargetingCriteria(account_id, campaign_id, line_item_id){
 
 // set TargetingCriteria
 function setTargetingCriteria(account_id, campaign_id, line_item_id){
-  //
   var checkedVals = $('.term:checkbox:checked').map(function() {
     return this.value;
   }).get();
-
-  // for each value send http request to create a targeting criteria
-  $(checkedVals).each(function( index ) {
-    var targeting_value = checkedVals[index];
-    $.getJSON("../../ads/api/targeting/new?account_id=" + account_id + "&line_item_id=" + campaign_id + "&targeting_value=" + targeting_value,
-    function (json) {
-      if (json['valid'] == true) {
-        // Ready
-        console.log("ready");
-      } else {
-        // Not Valid
-        console.log("not ready");
-      }
-    });
+  var payloads = $.map(checkedVals, function(targeting_value) {
+    return {
+      account_id: account_id,
+      line_item_id: line_item_id,
+      targeting_value: targeting_value,
+      targeting_type: "PHRASE_KEYWORD"
+    };
   });
+  submitTargeting(payloads);
 }
 
 // Ads-Modal on close

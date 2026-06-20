@@ -16,6 +16,7 @@ from django.shortcuts import *
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import logout as auth_logout
 from django.conf import settings
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 MAX_AGE = getattr(settings, 'CACHE_CONTROL_MAX_AGE', 2592000)
 
@@ -34,6 +35,7 @@ def login(request):
 
 
 @login_required
+@ensure_csrf_cookie
 def home(request):
     """
     Returns home page for given request
