@@ -252,6 +252,17 @@ class TargetingFormTests(unittest.TestCase):
             ),
         )
 
+    def test_python2_compatible_decoder_preserves_utf8_schema(self):
+        body = (
+            b"account_id=account&line_item_id=line&targeting_type=PHRASE_KEYWORD&"
+            b"targeting_value=grumpy+cat+%E2%98%95"
+        )
+        with patch("home.ads_protocol.PY2", True):
+            parsed = parse_targeting_form(
+                "POST", "application/x-www-form-urlencoded", body
+            )
+        self.assertEqual("grumpy cat ☕", parsed["targeting_value"])
+
     def test_rejects_wrong_method_content_type_size_and_schema(self):
         valid = (
             b"account_id=account&line_item_id=line&targeting_type=LOCATION&"

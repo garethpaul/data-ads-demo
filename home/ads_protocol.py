@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import json
 import re
+import sys
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -15,6 +16,8 @@ try:
     string_types = (basestring,)
 except NameError:
     string_types = (str,)
+
+PY2 = sys.version_info[0] == 2
 
 
 MAX_REQUEST_BYTES = 4 * 1024
@@ -193,14 +196,24 @@ def parse_targeting_form(method, content_type, body):
     if re.search(br"%(?![0-9A-Fa-f]{2})", body):
         raise AdsProtocolError("targeting request encoding is invalid")
     try:
-        decoded = body.decode("ascii")
-        parsed = parse_qs(
-            decoded,
-            keep_blank_values=True,
-            strict_parsing=True,
-            encoding="utf-8",
-            errors="strict",
-        )
+        if PY2:
+            raw_parsed = parse_qs(body, keep_blank_values=True, strict_parsing=True)
+            parsed = {}
+            for raw_name, raw_values in raw_parsed.items():
+                name = raw_name.decode("ascii") if isinstance(raw_name, bytes) else raw_name
+                parsed[name] = [
+                    value.decode("utf-8") if isinstance(value, bytes) else value
+                    for value in raw_values
+                ]
+        else:
+            decoded = body.decode("ascii")
+            parsed = parse_qs(
+                decoded,
+                keep_blank_values=True,
+                strict_parsing=True,
+                encoding="utf-8",
+                errors="strict",
+            )
     except (UnicodeDecodeError, ValueError, TypeError):
         raise AdsProtocolError("targeting request encoding is invalid")
 
