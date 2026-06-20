@@ -6,3 +6,5 @@
 app/settings_my.py
 fabfile.py
 db.sqlite3
+.review/
+__pycache__/

@@ -148,6 +148,9 @@ SOCIAL_AUTH_TWITTER_SECRET = environ.get('CONSUMER_SECRET')         # Twitter AP
 
 TWITTER_ACCESS_TOKEN = environ.get('ACCESS_TOKEN')                  # Twitter API Access Token
 TWITTER_ACCESS_TOKEN_SECRET = environ.get('ACCESS_TOKEN_SECRET')    # Twitter API Access Secret
+TWITTER_ADS_API_BASE_URL = environ.get(
+    'TWITTER_ADS_API_BASE_URL',
+    'https://ads-api.x.com/12')
 
 GNIP_USERNAME = environ.get('GNIP_USERNAME')                         # Gnip username
 GNIP_PASSWORD = environ.get('GNIP_PASSWORD')                         # Gnip password

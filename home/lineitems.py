@@ -5,46 +5,46 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import logout as auth_logout
 from django.conf import settings
 from twitter_ads.client import Client
-from twitter_ads.campaign import TargetingCriteria, LineItem
+from twitter_ads.campaign import LineItem
 from twitter_ads.enum import PRODUCT, PLACEMENT, OBJECTIVE
 from twitter_ads.error import Error
+
+from home.ads_protocol import (
+    MAX_REQUEST_BYTES,
+    TwitterAdsTargetingClient,
+    process_targeting_request)
 
 
 @login_required
 def new_targeting(request):
     """
-    Creates a new
+    Creates a targeting criterion through a bounded, single-attempt POST.
     """
-    line_item_id = request.GET.get("line_item_id", "")
-    account_id = request.GET.get("account_id", "")
-    targeting_value = request.GET.get("targeting_value")
-    targeting_type = "BEHAVIOR_EXPANDED"
-    json_data = {}
-    try:
-        client = Client(
+    def client_factory():
+        return TwitterAdsTargetingClient(
             settings.SOCIAL_AUTH_TWITTER_KEY,
             settings.SOCIAL_AUTH_TWITTER_SECRET,
             settings.TWITTER_ACCESS_TOKEN,
-            settings.TWITTER_ACCESS_TOKEN_SECRET)
-        account = client.accounts(account_id)
-        targeting_criteria = TargetingCriteria(account)
-        targeting_criteria.line_item_id = line_item_id
-        targeting_criteria.targeting_type = targeting_type
-        targeting_criteria.targeting_value = targeting_value
-        if targeting_value == "TAILORED_AUDIENCE":
-            targeting_criteria.tailored_audience_type = "FLEXIBLE"
-        targeting_criteria.save()
-        json_data = {
-            "valid": True,
-            "account_id": account_id,
-            "line_item_id": line_item_id,
-            "targeting_value": targeting_value}
-    except Error as e:
-        json_data["response"] = e.details
-        json_data["valid"] = False
-        # passing to push the json_data to the browser
-        pass
-    return HttpResponse(json.dumps(json_data), content_type="application/json")
+            settings.TWITTER_ACCESS_TOKEN_SECRET,
+            base_url=settings.TWITTER_ADS_API_BASE_URL)
+
+    try:
+        content_length = int(request.META.get("CONTENT_LENGTH", ""))
+    except (TypeError, ValueError):
+        content_length = 0
+    if content_length <= 0 or content_length > MAX_REQUEST_BYTES:
+        status = 400
+        json_data = {"valid": False, "error": "invalid_request"}
+    else:
+        status, json_data = process_targeting_request(
+            request.method,
+            request.META.get("CONTENT_TYPE", ""),
+            request.body,
+            client_factory)
+    return HttpResponse(
+        json.dumps(json_data),
+        content_type="application/json",
+        status=status)
 
 
 @login_required

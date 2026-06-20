@@ -3,6 +3,13 @@
 Audience Creation and Ad Targeting using Twitter Data (Gnip) and Ads API
 =================
 
+Targeting writes use a CSRF-protected browser POST and one OAuth 1.0a provider
+POST to `https://ads-api.x.com/12`. The provider request is UTF-8 form encoded,
+does not follow redirects or retry, has bounded timeouts, and accepts at most
+64 KiB of JSON response data. After a timeout or connection failure, inspect
+the Ads account before retrying because the outcome is unknown and the API does
+not expose an idempotency key for this operation.
+
 This sample uses GNIP full archive search to iteratively create audiences for ad targeting on Twitter. It uses the Full Archive Search API to determine volume of tweets about a topic, uploads them
 as an audience via the TON API, and then allows creation of new Campaigns against that audience.
 
