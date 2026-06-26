@@ -1,5 +1,60 @@
 # Changes
 
+## 2026-06-26 16:00 PDT - P1 - Vendor executable browser dependency
+
+### Summary
+
+Closed the final post-merge CodeQL finding by moving NProgress 0.2.0 from an
+unpinned third-party script tag to an exact same-origin vendored asset.
+
+### Work completed
+
+- Vendored the exact NProgress 0.2.0 minified release and pinned its SHA-256 in
+  the offline integration contract.
+- Replaced the cdnjs script tag with the same-origin static asset.
+- Removed the malformed, unused external js-cookie script tag; the app already
+  uses its vendored jQuery cookie plugin.
+- Removed obsolete IE8 compatibility scripts from an external CDN so every
+  executable browser asset is now served from the repository's origin.
+- Added a hostile mutation that restores the external executable source.
+
+### Threads
+
+- Started: none; the bounded CodeQL survivor was fixed directly.
+- Continued: continuous open-source maintenance loop.
+- Stopped: none.
+
+### Files changed
+
+- `static/js/nprogress-0.2.0.min.js` — exact vendored runtime.
+- `templates/base.html` — same-origin script loading only.
+- `tests/test_integration_contracts.py` — asset and template contract.
+- `scripts/test_mutations.py` — external-source hostile mutation.
+- `CHANGES.md` — this maintenance-cycle record.
+
+### Validation
+
+- RED focused test — failed because the vendored asset did not exist.
+- GREEN focused test — passed after same-origin vendoring.
+- `make check` — all 25 tests and compilation/diff checks passed.
+- `make mutations` — all 16 hostile mutations were rejected.
+- `gitleaks detect --no-git` — no current-tree leaks found.
+
+### Bugs / findings
+
+- P1: `templates/base.html` executed NProgress from cdnjs without subresource
+  integrity, triggering CodeQL CWE-830.
+- P2: the adjacent js-cookie tag used the invalid `srcp` attribute and never
+  loaded; it was redundant with the vendored jQuery cookie plugin.
+
+### Blockers
+
+- Hosted CodeQL must confirm alert 10 closes on `master`.
+
+### Next action
+
+- Review, run hosted checks, and merge the exact green head.
+
 ## 2026-06-26 15:48 PDT - P0 - Remove tracked credentials and CodeQL findings
 
 ### Summary
@@ -20,6 +75,8 @@ browser assets.
   removed in jQuery 3.
 - Added exact version, SHA-256, template-reference, absent-file, and GNIP export
   regression contracts plus hostile mutations.
+- Removed tracked `app/settings_my.py`; all Twitter and GNIP credentials now
+  come only from documented local environment variables.
 
 ### Threads
 
@@ -63,5 +120,3 @@ browser assets.
 ### Next action
 
 - Run final static/leak checks, review, hosted CodeQL, and exact-head merge.
-- Removed tracked `app/settings_my.py`; all Twitter and GNIP credentials now
-  come only from documented local environment variables.
