@@ -23,17 +23,40 @@ MUTATIONS = [
         "if (targetingWriteInFlight || payloads.length === 0)",
         "if (payloads.length === 0)",
     ),
+    ("static/js/bootstrap.min.js", "Bootstrap v3.4.1", "Bootstrap v3.0.3"),
+    ("static/js/jquery-3.7.1.min.js", "jQuery v3.7.1", "jQuery v1.10.1"),
+    ("templates/base.html", "js/jquery-3.7.1.min.js", "js/jquery-1.10.1.min.js"),
+    (
+        "gnip_search/gnip_search_api.py",
+        ", paged = False",
+        ", output_file_path = None\n            , paged = False",
+    ),
+    ("README.md", "GNIP_PASSWORD", "GNIP_CREDENTIAL"),
+    ("static/js/script.js", '$(window).on("load",', "$(window).load("),
+    (
+        "static/js/bootstrap-datetimepicker.min.js",
+        '.find(".datepickerbutton").length',
+        '.find(".datepickerbutton").size()',
+    ),
 ]
 
 
 def copy_fixture(destination):
-    for source in ("home", "tests"):
+    for source in ("home", "tests", "gnip_search", "templates"):
         shutil.copytree(ROOT / source, destination / source)
     (destination / "static" / "js").mkdir(parents=True)
-    shutil.copy2(ROOT / "static" / "js" / "ads.js", destination / "static" / "js" / "ads.js")
+    for name in (
+        "ads.js",
+        "bootstrap.min.js",
+        "jquery-3.7.1.min.js",
+        "script.js",
+        "bootstrap-datetimepicker.min.js",
+    ):
+        shutil.copy2(ROOT / "static" / "js" / name, destination / "static" / "js" / name)
     (destination / "app").mkdir()
     shutil.copy2(ROOT / "app" / "settings.py", destination / "app" / "settings.py")
     shutil.copy2(ROOT / "requirements.txt", destination / "requirements.txt")
+    shutil.copy2(ROOT / "README.md", destination / "README.md")
 
 
 def main():

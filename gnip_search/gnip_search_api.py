@@ -40,14 +40,12 @@ class GnipSearchAPI(object):
             , password
             , stream_url
             , paged = False
-            , output_file_path = None
             , token_list_size = 20
             ):
         #############################################
         # set up query paramters
         # default tokenizer and character limit
         self.token_list_size = int(token_list_size)
-        self.output_file_path = output_file_path
         self.paged = paged
         self.user = user
         self.password = password
@@ -151,20 +149,7 @@ class GnipSearchAPI(object):
 
             repeat = False
             if self.paged:
-                if len(acs) > 0:
-                    if self.output_file_path is not None:
-                        file_name = self.output_file_path + "/{0}_{1}.json".format(
-                                str(datetime.datetime.utcnow().strftime(
-                                    "%Y%m%d%H%M%S"))
-                              , str(self.file_name_prefix))
-                        with codecs.open(file_name, "wb","utf-8") as out:
-                            print >> sys.stderr, "(writing to file ...)"
-                            for item in tmp_response["results"]:
-                                out.write(json.dumps(item)+"\n")
-#                     else:
-#                         # if writing to file, don't keep track of all the data in memory
-#                         acs = []
-                else:
+                if len(acs) == 0:
                     print >> sys.stderr, "no results returned for rule:{0}".format(str(self.rule_payload))
                 if "next" in tmp_response:
                     self.rule_payload["next"]=tmp_response["next"]

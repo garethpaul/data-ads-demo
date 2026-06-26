@@ -10,6 +10,25 @@ does not follow redirects or retry, has bounded timeouts, and accepts at most
 the Ads account before retrying because the outcome is unknown and the API does
 not expose an idempotency key for this operation.
 
+Security maintenance
+====================
+
+The browser runtime uses the official Bootstrap 3.4.1 JavaScript release that
+patched CVE-2019-8331 and official jQuery 3.7.1. Their vendored files are pinned
+by SHA-256 in the offline integration contract. The unused readable Bootstrap
+3.0.3 copy and jQuery 1.10.1 runtime were removed.
+The app's window-load handler and legacy date-time picker shim were updated to
+avoid jQuery APIs removed in jQuery 3.
+
+The legacy GNIP client no longer accepts an arbitrary output directory or
+writes paged responses to caller-selected filesystem paths. Current application
+callers consume results in memory.
+
+Upstream release evidence:
+
+- https://blog.getbootstrap.com/2019/02/13/bootstrap-4-3-1-and-3-4-1/
+- https://blog.jquery.com/2023/08/28/jquery-3-7-1-released-reliable-table-row-dimensions/
+
 This sample uses GNIP full archive search to iteratively create audiences for ad targeting on Twitter. It uses the Full Archive Search API to determine volume of tweets about a topic, uploads them
 as an audience via the TON API, and then allows creation of new Campaigns against that audience.
 
@@ -36,17 +55,16 @@ Getting Started
 
 - Create a Twitter App (https://apps.twitter.com/). Also, ensure that the Callback URL is populated. This can point to http://localhost:9000 to start. If it is not included, you will get Client Authorization errors upon login.
 
-- Specify your API and GNIP credentials in app/settings_my.py under the following section:
+- Configure credentials only through local environment variables. Never place
+  real values in tracked Python settings files:
 
-    `GNIP_USERNAME = 'YOUR_GNIP_USERNAME'`
-
-    `GNIP_PASSWORD = 'YOUR_GNIP_PASSWORD'`
-
-    `GNIP_SEARCH_ENDPOINT = 'YOUR_GNIP_FULL_ARCHIVE_SEARCH_ENDPOINT'`
+    `CONSUMER_KEY`, `CONSUMER_SECRET`, `ACCESS_TOKEN`,
+    `ACCESS_TOKEN_SECRET`, `GNIP_USERNAME`, `GNIP_PASSWORD`, and
+    `GNIP_SEARCH_ENDPOINT`.
 
 - To initialize your database, run the from the `tweet-search` directory:
 
-  `python manage.py migrate --settings=app.settings_my`
+  `python manage.py migrate --settings=app.settings`
 
 - To start the server, run the following from the `tweet-search` directory:
 
