@@ -1,4 +1,5 @@
 from pathlib import Path
+import hashlib
 import unittest
 
 
@@ -50,6 +51,76 @@ class IntegrationContractTests(unittest.TestCase):
         self.assertIn("timeout=self._timeout", protocol)
         self.assertIn("https://ads-api.x.com/12", settings)
         self.assertIn("requests-oauthlib", requirements)
+
+    def test_gnip_client_has_no_caller_controlled_file_export(self):
+        source = (ROOT / "gnip_search" / "gnip_search_api.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("output_file_path", source)
+        self.assertNotIn("codecs.open(", source)
+
+    def test_browser_uses_patched_bootstrap_and_current_jquery_assets(self):
+        bootstrap = (ROOT / "static" / "js" / "bootstrap.min.js").read_text(
+            encoding="utf-8"
+        )
+        jquery = (ROOT / "static" / "js" / "jquery-3.7.1.min.js").read_text(
+            encoding="utf-8"
+        )
+        templates = "\n".join(
+            (ROOT / "templates" / name).read_text(encoding="utf-8")
+            for name in ("base.html", "login.html")
+        )
+
+        self.assertIn("Bootstrap v3.4.1", bootstrap)
+        self.assertIn("jQuery v3.7.1", jquery)
+        self.assertEqual(
+            "9ee2fcff6709e4d0d24b09ca0fc56aade12b4961ed9c43fd13b03248bfb57afe",
+            hashlib.sha256(bootstrap.encode("utf-8")).hexdigest(),
+        )
+        self.assertEqual(
+            "fc9a93dd241f6b045cbff0481cf4e1901becd0e12fb45166a8f17f95823f0b1a",
+            hashlib.sha256(jquery.encode("utf-8")).hexdigest(),
+        )
+        self.assertFalse((ROOT / "static" / "js" / "bootstrap.js").exists())
+        self.assertFalse((ROOT / "static" / "js" / "jquery-1.10.1.min.js").exists())
+        self.assertFalse((ROOT / "static" / "js" / "jquery-1.10.1.min.map").exists())
+        self.assertIn("js/bootstrap.min.js", templates)
+        self.assertIn("js/jquery-3.7.1.min.js", templates)
+        self.assertNotIn("js/bootstrap.js", templates)
+        self.assertNotIn("js/jquery-1.10.1.min.js", templates)
+
+    def test_repository_does_not_track_local_credentials(self):
+        self.assertFalse((ROOT / "app" / "settings_my.py").exists())
+        settings = (ROOT / "app" / "settings.py").read_text(encoding="utf-8")
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        for variable in (
+            "CONSUMER_KEY",
+            "CONSUMER_SECRET",
+            "ACCESS_TOKEN",
+            "ACCESS_TOKEN_SECRET",
+            "GNIP_USERNAME",
+            "GNIP_PASSWORD",
+            "GNIP_SEARCH_ENDPOINT",
+        ):
+            with self.subTest(variable=variable):
+                self.assertIn("environ.get('%s')" % variable, settings)
+                self.assertIn(variable, readme)
+
+    def test_custom_browser_code_avoids_removed_jquery_apis(self):
+        script = (ROOT / "static" / "js" / "script.js").read_text(
+            encoding="utf-8"
+        )
+        datetimepicker = (
+            ROOT / "static" / "js" / "bootstrap-datetimepicker.min.js"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn("$(window).load(", script)
+        self.assertIn('$(window).on("load",', script)
+        self.assertNotIn('.find(".datepickerbutton").size()', datetimepicker)
+        self.assertIn('.find(".datepickerbutton").length', datetimepicker)
+        self.assertEqual(
+            "cdc565042da17642325962724f83b9fc06fd66d030943e6bd02453531efe7fc4",
+            hashlib.sha256(datetimepicker.encode("utf-8")).hexdigest(),
+        )
 
 
 if __name__ == "__main__":
