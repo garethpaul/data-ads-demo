@@ -38,6 +38,11 @@ MUTATIONS = [
         '.find(".datepickerbutton").length',
         '.find(".datepickerbutton").size()',
     ),
+    (
+        "templates/base.html",
+        "js/nprogress-0.2.0.min.js",
+        "https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.js",
+    ),
 ]
 
 
@@ -51,6 +56,7 @@ def copy_fixture(destination):
         "jquery-3.7.1.min.js",
         "script.js",
         "bootstrap-datetimepicker.min.js",
+        "nprogress-0.2.0.min.js",
     ):
         shutil.copy2(ROOT / "static" / "js" / name, destination / "static" / "js" / name)
     (destination / "app").mkdir()

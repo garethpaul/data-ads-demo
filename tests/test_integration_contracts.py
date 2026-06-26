@@ -122,6 +122,19 @@ class IntegrationContractTests(unittest.TestCase):
             hashlib.sha256(datetimepicker.encode("utf-8")).hexdigest(),
         )
 
+    def test_browser_executes_only_same_origin_script_assets(self):
+        template = (ROOT / "templates" / "base.html").read_text(encoding="utf-8")
+        nprogress_path = ROOT / "static" / "js" / "nprogress-0.2.0.min.js"
+        self.assertTrue(nprogress_path.exists())
+        nprogress = nprogress_path.read_text(encoding="utf-8")
+        self.assertNotIn("<script src=\"http", template)
+        self.assertNotIn("<script srcp=", template)
+        self.assertIn("js/nprogress-0.2.0.min.js", template)
+        self.assertEqual(
+            "5d6cd2509f85210dfc76a0b4ebfe3cb0d470535421dff69f8e6274f344a7780f",
+            hashlib.sha256(nprogress.encode("utf-8")).hexdigest(),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
